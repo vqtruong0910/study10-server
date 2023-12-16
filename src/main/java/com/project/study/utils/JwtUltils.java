@@ -9,13 +9,23 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 public class JwtUltils {
   private final static String secretKey = "study10-maidinh";
 
-  public static String createJwt(String email, String role) {
+  public static String createAccessJwt(String email, String role) {
     String token = JWT.create()
         .withClaim("email", email)
         .withClaim("role", role)
         .withIssuedAt(new Date(System.currentTimeMillis()))
-        .withExpiresAt(new Date(System.currentTimeMillis() + 1000 * 60 * 10))
-        .sign(Algorithm.HMAC256(secretKey)); // 10 minus
+        .withExpiresAt(new Date(System.currentTimeMillis() + 1000 * 60 * 10)) // 10 minus
+        .sign(Algorithm.HMAC256(secretKey));
+
+    return token;
+  }
+
+  public static String createRefreshJwt(String email) {
+    String token = JWT.create()
+        .withClaim("email", email)
+        .withIssuedAt(new Date(System.currentTimeMillis()))
+        .withExpiresAt(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 30)) // 30 day
+        .sign(Algorithm.HMAC256(secretKey));
 
     return token;
   }

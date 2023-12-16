@@ -3,10 +3,10 @@ package com.project.study.errors;
 import lombok.Getter;
 
 @Getter
-public class CustomException extends RuntimeException {
+public class ConfligException extends RuntimeException {
   private String message;
 
-  public CustomException(String msg) {
+  public ConfligException(String msg) {
     super(msg);
     this.message = msg;
   }

@@ -21,10 +21,13 @@ import org.springframework.web.bind.annotation.RestController;
 import com.project.study.dtos.MessageResponse;
 import com.project.study.dtos.Role;
 import com.project.study.entity.UserEntity;
-import com.project.study.errors.CustomException;
+import com.project.study.errors.ConfligException;
+import com.project.study.errors.NotFoundException;
 import com.project.study.repositories.UserRepository;
 import com.project.study.utils.JwtUltils;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -48,9 +51,10 @@ public class AuthenticationController {
   }
 
   @PostMapping("/login")
-  ResponseEntity<MessageResponse> Login(@Valid @RequestBody UserEntity userDto, BindingResult bindingResult) {
+  ResponseEntity<MessageResponse> Login(@Valid @RequestBody UserEntity userDto, HttpServletResponse response,
+      BindingResult bindingResult) {
     if (bindingResult.hasErrors()) {
-      throw new CustomException(
+      throw new ConfligException(
           bindingResult.getAllErrors().stream().map(i -> i.getDefaultMessage()).collect(Collectors.toList())
               .toString());
     }
@@ -61,22 +65,26 @@ public class AuthenticationController {
 
       UserEntity userDetails = (UserEntity) auth.getPrincipal();
 
-      String token = JwtUltils.createJwt(userDetails.getUsername(), userDetails.getRole().name());
+      String accessToken = JwtUltils.createAccessJwt(userDetails.getUsername(), userDetails.getRole().name());
+      String refreshToken = JwtUltils.createRefreshJwt(userDetails.getUsername());
+
+      Cookie cookie = new Cookie("refesh_token", refreshToken);
+      cookie.setHttpOnly(true);
+      cookie.setPath("/");
+      response.addCookie(cookie);
 
       log.info("Email " + userDto.getEmail() + " login success");
-
-      MessageResponse messageResponse = new MessageResponse(HttpStatus.OK.value(), "Valid", new TokenDto(token));
+      MessageResponse messageResponse = new MessageResponse(HttpStatus.OK.value(), "Valid", new TokenDto(accessToken));
       return ResponseEntity.status(HttpStatus.OK).body(messageResponse);
     } catch (Exception e) {
-      MessageResponse messageResponse = new MessageResponse(HttpStatus.NOT_FOUND.value(), "Invalid", null);
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(messageResponse);
+      throw new NotFoundException("Email or password does not exist");
     }
   }
 
   @PostMapping("/register")
   ResponseEntity<MessageResponse> Register(@Valid @RequestBody UserEntity userDto, BindingResult bindingResult) {
     if (bindingResult.hasErrors()) {
-      throw new CustomException(
+      throw new ConfligException(
           bindingResult.getAllErrors().stream().map(i -> i.getDefaultMessage()).collect(Collectors.toList())
               .toString());
     }
@@ -91,9 +99,7 @@ public class AuthenticationController {
       MessageResponse messageResponse = new MessageResponse(HttpStatus.OK.value(), "Register successfull", userEntity);
       return ResponseEntity.status(HttpStatus.OK).body(messageResponse);
     }
-
-    MessageResponse messageResponse = new MessageResponse(HttpStatus.CONFLICT.value(), "Email already exists", null);
-    return ResponseEntity.status(HttpStatus.CONFLICT).body(messageResponse);
+    throw new ConfligException("Email already exists");
   }
 
   @GetMapping("/logout")
