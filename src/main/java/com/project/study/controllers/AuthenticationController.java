@@ -66,7 +66,7 @@ public class AuthenticationController {
       String accessToken = JwtUltils.createAccessJwt(userDetails.getUsername(), userDetails.getRole().name());
       String refreshToken = JwtUltils.createRefreshJwt(userDetails.getUsername());
 
-      Cookie cookie = new Cookie("refesh_token", refreshToken);
+      Cookie cookie = new Cookie("refresh_token", refreshToken);
       cookie.setHttpOnly(true);
       cookie.setPath("/");
       response.addCookie(cookie);
@@ -103,7 +103,7 @@ public class AuthenticationController {
   }
 
   @GetMapping("/refresh_token")
-  ResponseEntity<MessageResponse> RefreshToken(@CookieValue("refesh_token") String refreshToken,
+  ResponseEntity<MessageResponse> RefreshToken(@CookieValue("refresh_token") String refreshToken,
       HttpServletResponse response) {
     DecodedJWT decodedJWT = JwtUltils.decodeJwt(refreshToken);
     if (decodedJWT != null) {
@@ -112,7 +112,7 @@ public class AuthenticationController {
       String newRefreshToken = JwtUltils.createRefreshJwt(user.getUsername());
       String newAccessToken = JwtUltils.createAccessJwt(user.getUsername(), user.getRole().name());
 
-      Cookie cookie = new Cookie("refesh_token", newRefreshToken);
+      Cookie cookie = new Cookie("refresh_token", newRefreshToken);
       cookie.setHttpOnly(true);
       cookie.setPath("/");
       response.addCookie(cookie);
