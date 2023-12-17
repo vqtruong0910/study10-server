@@ -18,8 +18,10 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 public class JwtTokenFilter extends OncePerRequestFilter {
 
   @Autowired
@@ -37,8 +39,8 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
     DecodedJWT decodedJWT = JwtUltils.decodeJwt(jwt);
     if (decodedJWT != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+      String email = decodedJWT.getClaim("email").asString();
       try {
-        String email = decodedJWT.getClaim("email").asString();
         UserDetails userDetails = this.userService.loadUserByUsername(email);
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(userDetails,
             userDetails.getPassword(),
@@ -46,6 +48,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
       } catch (Exception e) {
+        log.info("Email " + email + " unauthorized");
       }
     }
     filterChain.doFilter(request, response);
