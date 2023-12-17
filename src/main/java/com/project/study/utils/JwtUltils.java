@@ -1,6 +1,7 @@
 package com.project.study.utils;
 
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -14,7 +15,7 @@ public class JwtUltils {
         .withClaim("email", email)
         .withClaim("role", role)
         .withIssuedAt(new Date(System.currentTimeMillis()))
-        .withExpiresAt(new Date(System.currentTimeMillis() + 1000 * 60 * 10)) // 10 minus
+        .withExpiresAt(new Date(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(10))) // 10 minus
         .sign(Algorithm.HMAC256(secretKey));
 
     return token;
@@ -24,7 +25,7 @@ public class JwtUltils {
     String token = JWT.create()
         .withClaim("email", email)
         .withIssuedAt(new Date(System.currentTimeMillis()))
-        .withExpiresAt(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 30)) // 30 day
+        .withExpiresAt(new Date(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(30))) // 30 day
         .sign(Algorithm.HMAC256(secretKey));
 
     return token;
@@ -41,6 +42,7 @@ public class JwtUltils {
 
   public static DecodedJWT decodeJwt(String jwt) {
     try {
+      System.out.println(jwt);
       DecodedJWT decodedJWT = JWT.require(Algorithm.HMAC256(secretKey)).build().verify(jwt);
       return decodedJWT;
     } catch (Exception e) {

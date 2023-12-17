@@ -1,6 +1,7 @@
 package com.project.study.controllers;
 
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -65,7 +66,7 @@ public class AuthenticationController {
 
       String accessToken = JwtUltils.createAccessJwt(userDetails.getUsername(), userDetails.getRole().name());
       String refreshToken = JwtUltils.createRefreshJwt(userDetails.getUsername());
-
+      log.info(refreshToken);
       Cookie cookie = new Cookie("refresh_token", refreshToken);
       cookie.setHttpOnly(true);
       cookie.setPath("/");
@@ -103,7 +104,7 @@ public class AuthenticationController {
   }
 
   @GetMapping("/refresh_token")
-  ResponseEntity<MessageResponse> RefreshToken(@CookieValue("refresh_token") String refreshToken,
+  ResponseEntity<MessageResponse> RefreshToken(@CookieValue(name = "refresh_token") String refreshToken,
       HttpServletResponse response) {
     DecodedJWT decodedJWT = JwtUltils.decodeJwt(refreshToken);
     if (decodedJWT != null) {
@@ -117,7 +118,7 @@ public class AuthenticationController {
       cookie.setPath("/");
       response.addCookie(cookie);
 
-      MessageResponse messageResponse = new MessageResponse(HttpStatus.OK.value(), "FreshToken successfull",
+      MessageResponse messageResponse = new MessageResponse(HttpStatus.OK.value(), "Refresh token successfull",
           new TokenDto(newAccessToken));
       return ResponseEntity.status(HttpStatus.OK).body(messageResponse);
     }
