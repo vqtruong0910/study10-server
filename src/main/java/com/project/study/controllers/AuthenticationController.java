@@ -1,7 +1,6 @@
 package com.project.study.controllers;
 
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -97,14 +96,21 @@ public class AuthenticationController {
   }
 
   @GetMapping("/logout")
-  ResponseEntity<MessageResponse> Logout() {
+  ResponseEntity<MessageAlert> Logout(@CookieValue(name = "refresh_token", required = false) String refreshToken,
+      HttpServletResponse response) {
+    if (refreshToken != null) {
+      Cookie cookie = new Cookie("refresh_token", "");
+      cookie.setHttpOnly(true);
+      cookie.setPath("/");
+      response.addCookie(cookie);
+    }
     SecurityContextHolder.clearContext();
-    MessageResponse messageResponse = new MessageResponse(HttpStatus.OK.value(), "Logout successfull", null);
+    MessageAlert messageResponse = new MessageAlert(HttpStatus.OK.value(), "Logout successfull");
     return ResponseEntity.status(HttpStatus.OK).body(messageResponse);
   }
 
   @GetMapping("/refresh_token")
-  ResponseEntity<MessageResponse> RefreshToken(@CookieValue(name = "refresh_token") String refreshToken,
+  ResponseEntity<MessageResponse> RefreshToken(@CookieValue("refresh_token") String refreshToken,
       HttpServletResponse response) {
     DecodedJWT decodedJWT = JwtUltils.decodeJwt(refreshToken);
     if (decodedJWT != null) {
