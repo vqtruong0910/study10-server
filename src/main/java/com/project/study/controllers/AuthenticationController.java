@@ -12,18 +12,21 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.project.study.dtos.MessageResponse;
 import com.project.study.dtos.Role;
 import com.project.study.entity.UserEntity;
 import com.project.study.errors.ConfligException;
 import com.project.study.errors.NotFoundException;
 import com.project.study.repositories.UserRepository;
+import com.project.study.services.UserService;
 import com.project.study.utils.JwtUltils;
 
 import jakarta.servlet.http.Cookie;
@@ -41,13 +44,15 @@ public class AuthenticationController {
   private UserRepository userRepository;
   private AuthenticationManager authenticationManager;
   private PasswordEncoder passwordEncoder;
+  private UserService userService;
 
   @Autowired
   public AuthenticationController(UserRepository userRepository, AuthenticationManager authenticationManager,
-      PasswordEncoder passwordEncoder) {
+      PasswordEncoder passwordEncoder, UserService userService) {
     this.userRepository = userRepository;
     this.authenticationManager = authenticationManager;
     this.passwordEncoder = passwordEncoder;
+    this.userService = userService;
   }
 
   @PostMapping("/login")
@@ -107,6 +112,28 @@ public class AuthenticationController {
     SecurityContextHolder.clearContext();
     MessageResponse messageResponse = new MessageResponse(HttpStatus.OK.value(), "Logout successfull", null);
     return ResponseEntity.status(HttpStatus.OK).body(messageResponse);
+  }
+
+  @GetMapping("/refresh_token")
+  ResponseEntity<MessageResponse> RefreshToken(@CookieValue("refesh_token") String refreshToken,
+      HttpServletResponse response) {
+    DecodedJWT decodedJWT = JwtUltils.decodeJwt(refreshToken);
+    if (decodedJWT != null) {
+      String email = decodedJWT.getClaim("email").asString();
+      UserEntity user = (UserEntity) this.userService.loadUserByUsername(email);
+      String newRefreshToken = JwtUltils.createRefreshJwt(user.getUsername());
+      String newAccessToken = JwtUltils.createAccessJwt(user.getUsername(), user.getRole().name());
+
+      Cookie cookie = new Cookie("refesh_token", newRefreshToken);
+      cookie.setHttpOnly(true);
+      cookie.setPath("/");
+      response.addCookie(cookie);
+
+      MessageResponse messageResponse = new MessageResponse(HttpStatus.OK.value(), "FreshToken successfull",
+          new TokenDto(newAccessToken));
+      return ResponseEntity.status(HttpStatus.OK).body(messageResponse);
+    }
+    throw new NotFoundException("Refresh token does not exist");
   }
 
   /**
