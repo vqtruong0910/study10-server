@@ -21,6 +21,7 @@ import com.project.study.dtos.MessageAlert;
 import com.project.study.dtos.MessageResponse;
 import com.project.study.dtos.Role;
 import com.project.study.dtos.UserDto;
+import com.project.study.dtos.UserLoginDto;
 import com.project.study.entity.UserEntity;
 import com.project.study.errors.ConfligException;
 import com.project.study.errors.NotFoundException;
@@ -171,19 +172,5 @@ public class AuthenticationController {
     private String email;
     private String fullName;
     private String accessToken;
-  }
-
-  @AllArgsConstructor
-  @Getter
-  @Setter
-  @NoArgsConstructor
-  public class UserLoginDto {
-
-    @NotEmpty(message = "Không được để trống email")
-    @Email(message = "Email không hợp lệ")
-    private String email;
-
-    @NotEmpty(message = "Không được để trống password")
-    private String password;
   }
 }
