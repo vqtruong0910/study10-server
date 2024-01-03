@@ -33,8 +33,11 @@ import com.project.study.utils.Ultils;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -57,7 +60,7 @@ public class AuthenticationController {
   }
 
   @PostMapping("/login")
-  ResponseEntity<MessageResponse> Login(@Valid @RequestBody UserDto userDto, HttpServletResponse response) {
+  ResponseEntity<MessageResponse> Login(@Valid @RequestBody UserLoginDto userDto, HttpServletResponse response) {
     try {
       UserEntity userDetails = authentiacationService.login(userDto.getEmail(), userDto.getPassword());
 
@@ -68,7 +71,7 @@ public class AuthenticationController {
 
       log.info("Email " + userDto.getEmail() + " login success");
       MessageResponse messageResponse = new MessageResponse(HttpStatus.OK.value(), "Valid",
-          new UserLoginDto(userDetails.getEmail(), userDetails.getFullName(), accessToken));
+          new MessageUserDto(userDetails.getEmail(), userDetails.getFullName(), accessToken));
       return ResponseEntity.status(HttpStatus.OK).body(messageResponse);
     } catch (Exception e) {
       throw new NotFoundException("Email or password does not exist");
@@ -112,7 +115,7 @@ public class AuthenticationController {
       Ultils.addRefreshTokenCookie(response, refreshToken, (int) TimeUnit.DAYS.toSeconds(30));
 
       MessageResponse messageResponse = new MessageResponse(HttpStatus.OK.value(), "Register and login successfull",
-          new UserLoginDto(userRegister.getEmail(), userRegister.getFullName(), accessToken));
+          new MessageUserDto(userRegister.getEmail(), userRegister.getFullName(), accessToken));
       return ResponseEntity.status(HttpStatus.OK).body(messageResponse);
     }
     throw new ConfligException("Register failed! Email already exists");
@@ -164,9 +167,23 @@ public class AuthenticationController {
   @AllArgsConstructor
   @Getter
   @Setter
-  public class UserLoginDto {
+  public class MessageUserDto {
     private String email;
     private String fullName;
     private String accessToken;
+  }
+
+  @AllArgsConstructor
+  @Getter
+  @Setter
+  @NoArgsConstructor
+  public class UserLoginDto {
+
+    @NotEmpty(message = "Không được để trống email")
+    @Email(message = "Email không hợp lệ")
+    private String email;
+
+    @NotEmpty(message = "Không được để trống password")
+    private String password;
   }
 }
