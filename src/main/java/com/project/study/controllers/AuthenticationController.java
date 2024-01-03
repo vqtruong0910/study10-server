@@ -57,7 +57,7 @@ public class AuthenticationController {
   }
 
   @PostMapping("/login")
-  ResponseEntity<MessageResponse> Login(@Valid @RequestBody UserEntity userDto, HttpServletResponse response) {
+  ResponseEntity<MessageResponse> Login(@Valid @RequestBody UserDto userDto, HttpServletResponse response) {
     try {
       UserEntity userDetails = authentiacationService.login(userDto.getEmail(), userDto.getPassword());
 
@@ -67,7 +67,8 @@ public class AuthenticationController {
       Ultils.addRefreshTokenCookie(response, refreshToken, (int) TimeUnit.DAYS.toSeconds(30));
 
       log.info("Email " + userDto.getEmail() + " login success");
-      MessageResponse messageResponse = new MessageResponse(HttpStatus.OK.value(), "Valid", new TokenDto(accessToken));
+      MessageResponse messageResponse = new MessageResponse(HttpStatus.OK.value(), "Valid",
+          new UserLoginDto(userDetails.getEmail(), userDetails.getFullName(), accessToken));
       return ResponseEntity.status(HttpStatus.OK).body(messageResponse);
     } catch (Exception e) {
       throw new NotFoundException("Email or password does not exist");
@@ -75,7 +76,7 @@ public class AuthenticationController {
   }
 
   @PostMapping("/register")
-  ResponseEntity<MessageAlert> Register(@Valid @RequestBody UserEntity userDto) {
+  ResponseEntity<MessageAlert> Register(@Valid @RequestBody UserDto userDto) {
     Optional<UserEntity> user = userRepository.findByEmail(userDto.getEmail());
 
     if (!user.isPresent()) {
@@ -111,7 +112,7 @@ public class AuthenticationController {
       Ultils.addRefreshTokenCookie(response, refreshToken, (int) TimeUnit.DAYS.toSeconds(30));
 
       MessageResponse messageResponse = new MessageResponse(HttpStatus.OK.value(), "Register and login successfull",
-          new TokenDto(accessToken));
+          new UserLoginDto(userRegister.getEmail(), userRegister.getFullName(), accessToken));
       return ResponseEntity.status(HttpStatus.OK).body(messageResponse);
     }
     throw new ConfligException("Register failed! Email already exists");
@@ -157,6 +158,15 @@ public class AuthenticationController {
   @Getter
   @Setter
   public class TokenDto {
+    private String accessToken;
+  }
+
+  @AllArgsConstructor
+  @Getter
+  @Setter
+  public class UserLoginDto {
+    private String email;
+    private String fullName;
     private String accessToken;
   }
 }
