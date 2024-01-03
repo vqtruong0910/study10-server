@@ -45,6 +45,7 @@ public class WebConfig {
     CorsConfiguration configuration = new CorsConfiguration();
     // configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200"));
     configuration.addAllowedOrigin("*");
+    configuration.setAllowCredentials(true);
     // configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH",
     // "DELETE"));
     configuration.addAllowedMethod("*");
