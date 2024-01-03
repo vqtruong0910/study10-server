@@ -5,6 +5,7 @@ import java.util.Date;
 import org.springframework.format.annotation.DateTimeFormat;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -34,6 +35,6 @@ public class UserDto {
 
   private String address;
 
-  @NotEmpty(message = "Không được để trống giới tính")
+  @NotNull(message = "Không được để trống giới tính")
   private int gender;
 }

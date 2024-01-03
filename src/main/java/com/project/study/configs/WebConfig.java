@@ -1,7 +1,5 @@
 package com.project.study.configs;
 
-import java.util.Arrays;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,12 +41,8 @@ public class WebConfig {
   @Bean
   CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    // configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200"));
-    // configuration.addAllowedOrigin("*");
     configuration.addAllowedOrigin("http://localhost:4200");
     configuration.setAllowCredentials(true);
-    // configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH",
-    // "DELETE"));
     configuration.addAllowedMethod("*");
     configuration.addAllowedHeader("*");
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
