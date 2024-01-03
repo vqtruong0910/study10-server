@@ -42,7 +42,6 @@ public class JwtUltils {
 
   public static DecodedJWT decodeJwt(String jwt) {
     try {
-      System.out.println(jwt);
       DecodedJWT decodedJWT = JWT.require(Algorithm.HMAC256(secretKey)).build().verify(jwt);
       return decodedJWT;
     } catch (Exception e) {

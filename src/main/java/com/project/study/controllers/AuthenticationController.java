@@ -1,13 +1,11 @@
 package com.project.study.controllers;
 
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CookieValue;
@@ -18,15 +16,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.project.study.dtos.Gender;
 import com.project.study.dtos.MessageAlert;
 import com.project.study.dtos.MessageResponse;
 import com.project.study.dtos.Role;
+import com.project.study.dtos.UserDto;
 import com.project.study.entity.UserEntity;
 import com.project.study.errors.ConfligException;
 import com.project.study.errors.NotFoundException;
 import com.project.study.repositories.UserRepository;
+import com.project.study.services.AuthentiacationService;
 import com.project.study.services.UserService;
 import com.project.study.utils.JwtUltils;
+import com.project.study.utils.Ultils;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
@@ -41,35 +43,28 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AuthenticationController {
   private UserRepository userRepository;
-  private AuthenticationManager authenticationManager;
   private PasswordEncoder passwordEncoder;
   private UserService userService;
+  private AuthentiacationService authentiacationService;
 
   @Autowired
-  public AuthenticationController(UserRepository userRepository, AuthenticationManager authenticationManager,
-      PasswordEncoder passwordEncoder, UserService userService) {
+  public AuthenticationController(UserRepository userRepository, PasswordEncoder passwordEncoder,
+      UserService userService, AuthentiacationService authentiacationService) {
     this.userRepository = userRepository;
-    this.authenticationManager = authenticationManager;
     this.passwordEncoder = passwordEncoder;
     this.userService = userService;
+    this.authentiacationService = authentiacationService;
   }
 
   @PostMapping("/login")
   ResponseEntity<MessageResponse> Login(@Valid @RequestBody UserEntity userDto, HttpServletResponse response) {
     try {
-      Authentication auth = authenticationManager
-          .authenticate(new UsernamePasswordAuthenticationToken(userDto.getEmail(), userDto.getPassword()));
-      SecurityContextHolder.getContext().setAuthentication(auth);
-
-      UserEntity userDetails = (UserEntity) auth.getPrincipal();
+      UserEntity userDetails = authentiacationService.login(userDto.getEmail(), userDto.getPassword());
 
       String accessToken = JwtUltils.createAccessJwt(userDetails.getUsername(), userDetails.getRole().name());
       String refreshToken = JwtUltils.createRefreshJwt(userDetails.getUsername());
-      log.info(refreshToken);
-      Cookie cookie = new Cookie("refresh_token", refreshToken);
-      cookie.setHttpOnly(true);
-      cookie.setPath("/");
-      response.addCookie(cookie);
+
+      Ultils.addRefreshTokenCookie(response, refreshToken, (int) TimeUnit.DAYS.toSeconds(30));
 
       log.info("Email " + userDto.getEmail() + " login success");
       MessageResponse messageResponse = new MessageResponse(HttpStatus.OK.value(), "Valid", new TokenDto(accessToken));
@@ -93,6 +88,33 @@ public class AuthenticationController {
       return ResponseEntity.status(HttpStatus.OK).body(messageResponse);
     }
     throw new ConfligException("Email already exists");
+  }
+
+  @PostMapping("/register-v2")
+  ResponseEntity<MessageResponse> RegisterV2(@Valid @RequestBody UserDto userDto, HttpServletResponse response) {
+    Optional<UserEntity> user = userRepository.findByEmail(userDto.getEmail());
+
+    if (!user.isPresent()) {
+      UserEntity userEntity = UserEntity.builder()
+          .email(userDto.getEmail())
+          .fullName(userDto.getFullName())
+          .phoneNumber(userDto.getPhoneNumber())
+          .birthDate(userDto.getBirthDate())
+          .gender(userDto.getGender() == 1 ? Gender.MALE : Gender.FEMALE)
+          .role(Role.USER)
+          .password(passwordEncoder.encode(userDto.getPassword())).build();
+      UserEntity userRegister = userRepository.save(userEntity);
+
+      String accessToken = JwtUltils.createAccessJwt(userRegister.getUsername(), userRegister.getRole().name());
+      String refreshToken = JwtUltils.createRefreshJwt(userRegister.getUsername());
+
+      Ultils.addRefreshTokenCookie(response, refreshToken, (int) TimeUnit.DAYS.toSeconds(30));
+
+      MessageResponse messageResponse = new MessageResponse(HttpStatus.OK.value(), "Register and login successfull",
+          new TokenDto(accessToken));
+      return ResponseEntity.status(HttpStatus.OK).body(messageResponse);
+    }
+    throw new ConfligException("Register failed! Email already exists");
   }
 
   @GetMapping("/logout")
@@ -119,10 +141,7 @@ public class AuthenticationController {
       String newRefreshToken = JwtUltils.createRefreshJwt(user.getUsername());
       String newAccessToken = JwtUltils.createAccessJwt(user.getUsername(), user.getRole().name());
 
-      Cookie cookie = new Cookie("refresh_token", newRefreshToken);
-      cookie.setHttpOnly(true);
-      cookie.setPath("/");
-      response.addCookie(cookie);
+      Ultils.addRefreshTokenCookie(response, newRefreshToken, (int) TimeUnit.DAYS.toSeconds(30));
 
       MessageResponse messageResponse = new MessageResponse(HttpStatus.OK.value(), "Refresh token successfull",
           new TokenDto(newAccessToken));

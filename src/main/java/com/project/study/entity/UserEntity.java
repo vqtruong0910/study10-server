@@ -18,7 +18,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
-import jakarta.validation.constraints.NotEmpty;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -34,10 +33,8 @@ import lombok.ToString;
 @Builder
 public class UserEntity extends BaseEntity implements UserDetails {
   @Column(unique = true)
-  @NotEmpty(message = "Không được để trống emal")
   private String email;
 
-  @NotEmpty(message = "Không được để trống password")
   private String password;
 
   private String fullName;
